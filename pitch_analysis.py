@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 if __name__ == "__main__":
     # import the raw data
-    raw_pitch_df = pd.read_csv('pitches000000.csv')
+    raw_pitch_df = pd.read_csv('./data/pitches000000.csv')
     print(raw_pitch_df)
     # remove novelty pitches and non-standard pitch events like pitchouts
     raw_pitch_df = raw_pitch_df[raw_pitch_df.pitch_type.isin(['FF', 'SL', 'SI', 'FT', 'CH', 'CU', 'FC', 'FS', 'KC', 'FA'])]
