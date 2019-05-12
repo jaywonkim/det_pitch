@@ -99,7 +99,7 @@ if __name__ == "__main__":
     plt.hist(probas[:, 1], bins=10)
     plt.xlim(0, 1)
     plt.title('Histogram of predicted probabilities')
-    plt.xlabel('Predicted probability of fastball')
+    plt.xlabel('Predicted probability of out')
     plt.ylabel('Frequency')
     plt.show()
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     plt.plot(fpr, tpr)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
-    plt.title('ROC curve for fastball predictor')
+    plt.title('ROC curve for out predictor')
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.grid(True)
