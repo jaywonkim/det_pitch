@@ -11,39 +11,60 @@ warnings.filterwarnings('ignore')
 if __name__ == "__main__":
     # import the raw data
     raw_pitch_df = pd.read_csv('./data/pitches000000.csv')
+    raw_bat_df = pd.read_csv('./data/pujols_data.csv')
 
     # remove novelty pitches and non-standard pitch events like pitchouts
     raw_pitch_df = raw_pitch_df[raw_pitch_df.pitch_type.isin(['FF', 'SL', 'SI', 'FT', 'CH', 'CU', 'FC', 'FS', 'KC', 'FA'])]
 
+    to_list = raw_bat_df['ab_id'].values.tolist()
+    base_data = pd.DataFrame()
+
+    for i in range(len(raw_bat_df)):
+        arranged_data = raw_pitch_df[raw_pitch_df.ab_id.isin([to_list[i]])]
+        arranged_data = arranged_data.loc[:, ["px", "pz", "ab_id", "pitch_type", "b_count", "s_count", "outs", "pitch_num", "on_1b", "on_2b", "on_3b"]]
+
+        arranged_data['event'] = str("N/A")
+        index = arranged_data.groupby(['ab_id'])['pitch_num'].transform(max) == arranged_data['pitch_num']
+        arranged_data = arranged_data.reset_index(drop=True)
+        arranged_data.set_value(len(index)-1, 'event', raw_bat_df.event[i])
+
+        base_data = base_data.append(arranged_data)
+
+    base_data = base_data.reset_index(drop=True)
+    print(base_data)
+
     # some feature creation/refinement
-    raw_pitch_df['is_fastball'] = np.where(raw_pitch_df.pitch_type.isin(['FF', 'SI', 'SI', 'FT', 'FA', 'FS']), 1, 0)
-    raw_pitch_df['runner_on_1st'] = np.where(~raw_pitch_df.on_1b.isnull(), 1, 0)
-    raw_pitch_df['runner_on_2nd'] = np.where(~raw_pitch_df.on_2b.isnull(), 1, 0)
-    raw_pitch_df['runner_on_3rd'] = np.where(~raw_pitch_df.on_3b.isnull(), 1, 0)
-    raw_pitch_df['total_baserunners'] = raw_pitch_df['runner_on_1st'] + raw_pitch_df['runner_on_2nd'] + raw_pitch_df['runner_on_3rd']
-    raw_pitch_df['is_offspeed'] = 1 - raw_pitch_df['is_fastball']
-    print(raw_pitch_df)
-    test_df, train_df = train_test_split(raw_pitch_df, test_size=0.2)
+    base_data['is_out'] = np.where(base_data.event.isin([
+        'Bunt Groundout', 'Bunt Lineout', 'Bunt Pop Out', 'Double Play',
+        'Fielders Choice Out', 'Flyout', 'Forceout', 'Grounded Into DP',
+        'Groundout', 'Lineout', 'Pop Out', 'Sac Fly DP', 'Sacrifice Bunt DP',
+        'Strikeout', 'Strikeout - DP', 'Triple Play']), 1, 0)
+
+    base_data['balls'] = np.where(~base_data.b_count.isnull(), 1, 0)
+    base_data['strikes'] = np.where(~base_data.s_count.isnull(), 1, 0)
+    base_data['outs'] = np.where(~base_data.outs.isnull(), 1, 0)
+
+    base_data['runner_on_1st'] = np.where(~base_data.on_1b.isnull(), 1, 0)
+    base_data['runner_on_2nd'] = np.where(~base_data.on_2b.isnull(), 1, 0)
+    base_data['runner_on_3rd'] = np.where(~base_data.on_3b.isnull(), 1, 0)
+    base_data['total_baserunners'] = base_data['runner_on_1st'] + base_data['runner_on_2nd'] + base_data['runner_on_3rd']
+
+
+    test_df, train_df = train_test_split(base_data, test_size=0.2)
 
     # selecting features for training
-    features = [#'inning',
-                #'top',
-                #'at_bat_num',
-                #'pcount_at_bat',
-                #'pcount_pitcher',
-                #'balls',
-                #'strikes',
-                #'fouls',
+    features = ['balls',
+                'strikes',
                 'outs',
                 'runner_on_1st',
                 'runner_on_2nd',
                 'runner_on_3rd',
                 'total_baserunners']
 
-    response = 'is_fastball'
+    response = 'is_out'
 
     # create and train random forest
-    runForrest = RandomForestClassifier(n_estimators=200, n_jobs=1, max_depth=10, max_features=5, min_samples_leaf=10, min_samples_split=20)
+    runForrest = RandomForestClassifier(n_estimators=200, n_jobs=1, max_depth=10, max_features=7, min_samples_leaf=10, min_samples_split=20)
 
     runForrest.fit(train_df[features], train_df[response])
 
@@ -74,3 +95,4 @@ if __name__ == "__main__":
     plt.ylabel('True Positive Rate')
     plt.grid(True)
     plt.show()
+    
