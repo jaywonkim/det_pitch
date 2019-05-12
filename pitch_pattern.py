@@ -23,7 +23,7 @@ def pitch_type_mapping(type_code):
 if __name__ == "__main__":
     # import the raw data
     raw_pitch_df = pd.read_csv('./data/pitches000001.csv')
-    raw_bat_df = pd.read_csv('./data/atbats.csv')
+    raw_bat_df = pd.read_csv('./data/pujols_data.csv')
     # print(raw_pitch_df)
 
     # remove novelty pitches and non-standard pitch events like pitchouts
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     z = []
     t = []
 
-    for i in range(1000):
+    for i in range(len(raw_bat_df)):
 
 
         to_list = raw_bat_df['ab_id'].values.tolist()

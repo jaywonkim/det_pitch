@@ -10,11 +10,22 @@ warnings.filterwarnings('ignore')
 
 if __name__ == "__main__":
     # import the raw data
-    raw_pitch_df = pd.read_csv('./data/pitches000000.csv')
+    raw_pitch_df = pd.read_csv('./data/pitches000001.csv')
     raw_bat_df = pd.read_csv('./data/pujols_data.csv')
 
     # remove novelty pitches and non-standard pitch events like pitchouts
     raw_pitch_df = raw_pitch_df[raw_pitch_df.pitch_type.isin(['FF', 'SL', 'SI', 'FT', 'CH', 'CU', 'FC', 'FS', 'KC', 'FA'])]
+
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "FF", "pitch_type"] = 1
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "SL", "pitch_type"] = 2
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "SI", "pitch_type"] = 3
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "FT", "pitch_type"] = 4
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "CH", "pitch_type"] = 5
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "CU", "pitch_type"] = 6
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "FC", "pitch_type"] = 7
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "FS", "pitch_type"] = 8
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "KC", "pitch_type"] = 9
+    raw_pitch_df.ix[raw_pitch_df.pitch_type == "FA", "pitch_type"] = 10
 
     to_list = raw_bat_df['ab_id'].values.tolist()
     base_data = pd.DataFrame()
@@ -31,6 +42,8 @@ if __name__ == "__main__":
         base_data = base_data.append(arranged_data)
 
     base_data = base_data.reset_index(drop=True)
+
+    base_data = base_data.dropna(axis=0)
     print(base_data)
 
     # some feature creation/refinement
@@ -48,7 +61,8 @@ if __name__ == "__main__":
     base_data['runner_on_2nd'] = np.where(~base_data.on_2b.isnull(), 1, 0)
     base_data['runner_on_3rd'] = np.where(~base_data.on_3b.isnull(), 1, 0)
     base_data['total_baserunners'] = base_data['runner_on_1st'] + base_data['runner_on_2nd'] + base_data['runner_on_3rd']
-
+    base_data['is_not_out'] = 1 - base_data['is_out']
+    base_data.is_out.value_counts(normalize=True)
 
     test_df, train_df = train_test_split(base_data, test_size=0.2)
 
@@ -56,21 +70,24 @@ if __name__ == "__main__":
     features = ['balls',
                 'strikes',
                 'outs',
+                'pitch_type',
                 'runner_on_1st',
                 'runner_on_2nd',
                 'runner_on_3rd',
-                'total_baserunners']
+                'total_baserunners'
+                ]
 
     response = 'is_out'
 
     # create and train random forest
-    runForrest = RandomForestClassifier(n_estimators=200, n_jobs=1, max_depth=10, max_features=7, min_samples_leaf=10, min_samples_split=20)
-
+    runForrest = RandomForestClassifier(n_estimators=200, n_jobs=1, max_depth=10, max_features=8, min_samples_leaf=10, min_samples_split=20)
     runForrest.fit(train_df[features], train_df[response])
 
     probas = runForrest.predict_proba(test_df[features])
     preds = runForrest.predict(test_df[features])
 
+    print(probas)
+    print(preds)
     # some model performance metrics
     print('AUC: ' + str(metrics.roc_auc_score(y_score=probas[:, 1], y_true=test_df[response])))
     print('logloss: ' + str(metrics.log_loss(y_pred=probas[:, 1], y_true=test_df[response])))
