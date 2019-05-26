@@ -1,18 +1,9 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
+import csv
 import warnings
 warnings.filterwarnings('ignore')
 
-if __name__ == "__main__":
-    # import the raw data
-    raw_pitch_df = pd.read_csv('./data/pitches000001.csv')
-    raw_bat_df = pd.read_csv('./data/pujols_data.csv')
-
+def org_data(raw_pitch_df, raw_bat_df):
     to_list = raw_bat_df['ab_id'].values.tolist()
     base_data = pd.DataFrame()
 
@@ -28,9 +19,23 @@ if __name__ == "__main__":
         base_data = base_data.append(arranged_data)
     base_data = base_data.reset_index(drop=True)
     base_data = base_data.dropna(axis=0)
+    return base_data
+
+if __name__ == "__main__":
+    # import the raw data
+    raw_pitch_df = pd.read_csv('./data/DivFile/pitches000000.csv')
+    raw_bat_df = pd.read_csv('./data/pujols_data.csv')
 
     final_data = pd.DataFrame()
-    final_data = base_data[base_data.event.isin([
+    final_data = final_data.append(org_data(raw_pitch_df, raw_bat_df))
+
+    raw_pitch_df = pd.read_csv('./data/DivFile/pitches000001.csv')
+    final_data = final_data.append(org_data(raw_pitch_df, raw_bat_df))
+
+    raw_pitch_df = pd.read_csv('./data/DivFile/pitches000002.csv')
+    final_data = final_data.append(org_data(raw_pitch_df, raw_bat_df))
+
+    final_data = final_data[final_data.event.isin([
         'Bunt Groundout', 'Bunt Lineout', 'Bunt Pop Out', 'Double Play',
         'Fielders Choice Out', 'Flyout', 'Forceout', 'Grounded Into DP',
         'Groundout', 'Lineout', 'Pop Out', 'Sac Fly DP', 'Sacrifice Bunt DP',

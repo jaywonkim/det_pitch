@@ -57,10 +57,10 @@ if __name__ == "__main__":
     base_data['strikes'] = np.where(~base_data.s_count.isnull(), 1, 0)
     base_data['outs'] = np.where(~base_data.outs.isnull(), 1, 0)
 
-    base_data['runner_on_1st'] = np.where(~base_data.on_1b.isnull(), 1, 0)
-    base_data['runner_on_2nd'] = np.where(~base_data.on_2b.isnull(), 1, 0)
-    base_data['runner_on_3rd'] = np.where(~base_data.on_3b.isnull(), 1, 0)
-    base_data['total_baserunners'] = base_data['runner_on_1st'] + base_data['runner_on_2nd'] + base_data['runner_on_3rd']
+    #base_data['runner_on_1st'] = np.where(~base_data.on_1b.isnull(), 1, 0)
+    #base_data['runner_on_2nd'] = np.where(~base_data.on_2b.isnull(), 1, 0)
+    #base_data['runner_on_3rd'] = np.where(~base_data.on_3b.isnull(), 1, 0)
+    #base_data['total_baserunners'] = base_data['runner_on_1st'] + base_data['runner_on_2nd'] + base_data['runner_on_3rd']
     base_data['is_not_out'] = 1 - base_data['is_out']
     base_data.is_out.value_counts(normalize=True)
 
@@ -70,17 +70,18 @@ if __name__ == "__main__":
     features = ['balls',
                 'strikes',
                 'outs',
-                'pitch_type',
-                'runner_on_1st',
-                'runner_on_2nd',
-                'runner_on_3rd',
-                'total_baserunners'
+                'pitch_type'#,
+                #'runner_on_1st',
+                #'runner_on_2nd',
+                #'runner_on_3rd',
+                #'total_baserunners'
                 ]
 
     response = 'is_out'
 
     # create and train random forest
-    runForrest = RandomForestClassifier(n_estimators=200, n_jobs=1, max_depth=10, max_features=8, min_samples_leaf=10, min_samples_split=20)
+    #runForrest = RandomForestClassifier(n_estimators=200, n_jobs=1, max_depth=10, max_features=8, min_samples_leaf=10, min_samples_split=20)
+    runForrest = RandomForestClassifier()
     runForrest.fit(train_df[features], train_df[response])
 
     probas = runForrest.predict_proba(test_df[features])
@@ -88,11 +89,12 @@ if __name__ == "__main__":
 
     print(probas)
     print(preds)
+
     # some model performance metrics
     print('AUC: ' + str(metrics.roc_auc_score(y_score=probas[:, 1], y_true=test_df[response])))
     print('logloss: ' + str(metrics.log_loss(y_pred=probas[:, 1], y_true=test_df[response])))
     print('accuracy score: ' + str(metrics.accuracy_score(test_df[response], preds)))
-    print('null accuracy: ' + str(max(test_df[response].mean(), 1 - test_df[response].mean())))
+    #print('null accuracy: ' + str(max(test_df[response].mean(), 1 - test_df[response].mean())))
     print(metrics.confusion_matrix(test_df[response], preds))
 
     # histogram of predicted probabilities

@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -6,29 +7,20 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import classification_report
-from sklearn.externals.six import StringIO
-from sklearn.tree import export_graphviz
-import pydotplus
-from IPython.display import Image
+import warnings
+warnings.filterwarnings('ignore')  # "error", "ignore", "always", "default", "module" or "once"
 
-os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+#os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 # Data Study
 source = pd.read_csv('./data/pitches_test.csv')
 pd.set_option('display.max_columns', 18)
-print(source.head())
-#print(source.tail(5))
-#print(source.columns.values)
 
 # Data_Pre Processing
 
 #to_drop = ['ab_id', 'ax', 'ay', 'az', 'break_angle', 'break_length', 'break_y', 'code', 'end_speed', 'nasty', 'pitch_num', 'px', 'pz', 'spin_dir', 'sz_bot', 'sz_top', 'type_confidence', 'vx0', 'vy0', 'vz0', 'x', 'x0', 'y', 'y0', 'z0', 'zone']
 to_drop = ['ab_id', 'code', 'sz_bot', 'sz_top', 'type_confidence', 'vx0', 'vy0', 'vz0', 'x', 'x0', 'y', 'y0', 'z0', 'zone']
-print(source.dtypes)
 source.drop(to_drop, inplace=True, axis=1)
-#print(source.head())
-#print(source.columns.values)
-#print(source.dtypes)
 
 # Fill Null values
 source['pitch_type'].fillna("FF", inplace=True)
@@ -54,7 +46,6 @@ source['px'].fillna(source['px'].mean(), inplace=True)
 source['pz'].fillna(source['pz'].mean(), inplace=True)
 source['spin_dir'].fillna(source['spin_dir'].mean(), inplace=True)
 source.dropna()
-#print(source.isna().sum())
 
 # Encode the result
 encoder = LabelEncoder()
@@ -73,21 +64,28 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 clf = DecisionTreeClassifier()
 clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
+
 print("Decision Tree Accuracy:", metrics.accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
-
-# View the decision tree
-#pydot = StringIO()
-#export_graphviz(clf, out_file=pydot, filled=True, rounded=True, special_characters=True,
-#                feature_names=features)
-#graph = pydotplus.graph_from_dot_data(pydot.getvalue())
-#graph.write_png('DecisionTree.png')
-#Image(graph.create_png())
-#print("Decision Tree Created")
 
 # Random Forest Model
 rfc = RandomForestClassifier(n_estimators=10)
 rfc = rfc.fit(X_train, y_train)
 y_pred = rfc.predict(X_test)
+
+#for i in range(len(y_pred)):
+#    print(y_pred[i])
+
 print("Random Forest Accuracy:", metrics.accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
+
+#probas = format(rfc.predict_proba(X_test))
+probas = rfc.predict_proba(X_test)
+#for i in range(len(probas)):
+#    print(probas[i])
+print(probas.shape)
+
+
+print(y_test)
+
+print(y_train.shape)
