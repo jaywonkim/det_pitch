@@ -108,3 +108,11 @@ if (special_pred == 8) :
     print('Sinker')
 if (special_pred == 9) :
     print('Slider')
+
+for i in range(len(source)):
+    if (source.pitch_type[i] == special_pred) :
+        x = source.px[i]
+        y = source.pz[i]
+        plt.title("Pitch location")
+        plt.scatter(x, y, c='r')
+plt.show()
