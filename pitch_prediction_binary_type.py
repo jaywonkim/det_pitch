@@ -7,6 +7,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import classification_report
+from sklearn.externals.six import StringIO
+from sklearn.tree import export_graphviz
+import pydotplus
+from IPython.display import Image
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.callbacks import EarlyStopping
@@ -32,13 +36,12 @@ source['event'].fillna("Strikeout", inplace=True)
 source.dropna()
 
 # Encode the result
-encoder = LabelEncoder()
-source['pitch_type'] = encoder.fit_transform(source['pitch_type'])
-mapping = dict(zip(encoder.classes_, range(1, len(encoder.classes_)+1)))
-print('Mapping of Pitch_type " ', mapping)
-#source['pitch_type'] = np.where(source.pitch_type.isin(['FC', 'FF', 'FT']), 1, 0)
+#encoder = LabelEncoder()
+#source['pitch_type'] = encoder.fit_transform(source['pitch_type'])
+#mapping = dict(zip(encoder.classes_, range(0, len(encoder.classes_)+1)))
+#print('Mapping of Pitch_type " ', mapping)
+source['pitch_type'] = np.where(source.pitch_type.isin(['FC', 'FF', 'FT']), 1, 0)
 #print(source['pitch_type'])
-
 
 # Test Train Split
 features = ['b_count', 's_count', 'outs', 'on_1b', 'on_2b', 'on_3b']
@@ -56,8 +59,17 @@ y_pred = clf.predict(X_test)
 print("Decision Tree Accuracy:", metrics.accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
 
+# View the decision tree
+pydot = StringIO()
+export_graphviz(clf, out_file=pydot, filled=True, rounded=True, special_characters=True,
+                feature_names=features)
+graph = pydotplus.graph_from_dot_data(pydot.getvalue())
+graph.write_png('DecisionTree.png')
+Image(graph.create_png())
+print("Decision Tree Created")
+
 # Random Forest Model
-rfc = RandomForestClassifier(n_estimators=100)
+rfc = RandomForestClassifier(n_estimators=10)
 rfc = rfc.fit(X_train, y_train)
 
 y_pred = rfc.predict(X_test)
@@ -83,30 +95,25 @@ plt.xlim([-1, X.shape[1]])
 plt.show()
 
 # 특정상황에서의 구질예측을 위한 test set 설정
-sample_array = {'b_count' : [0], 's_count' : [2], 'outs' : [2], 'on_1b' : [1], 'on_2b' : [2], 'on_3b' : [0]}
+set_b_count = 3
+set_s_count = 2
+set_outs = 2
+set_on_1b = 1
+set_on_2b = 1
+set_on_3b = 1
+
+sample_array = {'b_count' : [set_b_count], 's_count' : [set_s_count], 'outs' : [set_outs], 'on_1b' : [set_on_1b], 'on_2b' : [set_on_2b], 'on_3b' : [set_on_3b]}
 test_sample = pd.DataFrame(data=sample_array)
 special_pred = rfc.predict(test_sample)
 
+print("Ball Count : ", set_b_count, "ball ", set_s_count, "strike ", set_outs, "out ")
+print("Runner : ", set_on_1b, "on First ", set_on_2b, "on Second ", set_on_3b, "on Third ")
+
 if (special_pred == 0) :
-    print('Changeup')
+    print('Off Speed type')
 if (special_pred == 1) :
-    print('Curveball')
-if (special_pred == 2) :
-    print('Cutter')
-if (special_pred == 3) :
-    print('Four-seam Fastball')
-if (special_pred == 4) :
-    print('Splitter')
-if (special_pred == 5) :
-    print('Two-seam Fastball')
-if (special_pred == 6) :
-    print('Knuckle curve')
-if (special_pred == 7) :
-    print('Knuckeball')
-if (special_pred == 8) :
-    print('Sinker')
-if (special_pred == 9) :
-    print('Slider')
+    print('FastBall type')
+
 
 for i in range(len(source)):
     if (source.pitch_type[i] == special_pred) :
@@ -116,7 +123,7 @@ for i in range(len(source)):
         plt.scatter(x, y, c='r')
 plt.show()
 
-
+'''
 # Dense Neural Network
 X = source[features]
 y = source.pitch_type
@@ -139,8 +146,8 @@ def buildModel(X, Y, hidden):
 
     return model
 
-X_train, X_test, y_train, y_test = train_test_split(X, dummy_y, test_size=0.2, random_state=1)
-model = buildModel(X_train, y_train, 100)
+X_train, X_test, y_train, y_test = train_test_split(X, dummy_y, test_size=0.1, random_state=1)
+model = buildModel(X_train, y_train, 30)
 model.summary()
 
 # plot training history
@@ -149,7 +156,7 @@ model.summary()
 #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, verbose=0, callbacks=[es])
 history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, verbose=0)
 plt.yscale('linear')
-#plt.axis([0,100,0,1])
+plt.axis([0,100,0,1])
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.plot(history.history['loss'], label='train')
@@ -161,10 +168,10 @@ plt.show()
 
 history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, verbose=0)
 plt.yscale('linear')
-#plt.axis([0,100,0,1])
+plt.axis([0,100,0,1])
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.plot(history.history['acc'], label='train')
 plt.plot(history.history['val_acc'], label='test')
 plt.legend()
-plt.show()
+plt.show()'''

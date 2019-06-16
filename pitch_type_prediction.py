@@ -33,10 +33,21 @@ enc_dict = {'Single': '1B','Double': '2B','Triple': '3B','Home Run': 'HR','Walk'
             'Forceout': 'FORCE','Sacrifice Bunt DP': 'SBDP','Strikeout - DP': 'KDP',
             'Runner Out': 'RO','Sac Fly DP': 'SFDP'
            }
+'''
+enc_dict = {'Single': '1B','Double': '2B','Triple': '3B','Home Run': 'HR','Walk': 'BB',
+            'Intent Walk': 'IBB','Hit By Pitch': 'HBP','Strikeout': 'K','Sac Fly': 'SF',
+            'Grounded Into DP': 'GIDP','Groundout': 'GO','Lineout': 'LO','Pop Out': 'PO',
+            'Flyout': 'FO','Fielders Choice': 'FC','Sac Bunt': 'SAC','Double Play': 'DP',
+            'Triple Play': 'TP','Batter Interference': 'BI','Fan interference': 'FI',
+            'Field Error': 'ROE','Bunt Groundout': 'BGO',
+            'Bunt Lineout': 'BLO','Bunt Pop Out': 'BPO','Fielders Choice Out': 'FCO',
+            'Forceout': 'FORCE','Sacrifice Bunt DP': 'SBDP','Strikeout - DP': 'KDP',
+            'Runner Out': 'RO','Sac Fly DP': 'SFDP'
+           }'''
 
 pitches = pd.read_csv('./data/DivFile/pitches.csv')
 pitches = pitches[pitches['ab_id'] > 2018*1e6]
-atbats = pd.read_csv('./data/atbats.csv', index_col=0)
+atbats = pd.read_csv('./data/choo_data.csv', index_col=0)
 atbats = atbats[atbats.index > 2018*1e6]
 atbats['year'] = (atbats.index//1e6).astype(int)
 atbats['stand'] = atbats['stand'] == 'L'
@@ -54,8 +65,8 @@ atbats['_H'] = atbats[['_1B', '_2B', '_3B', '_HR']].sum(axis=1)
 atbats['_TB'] = atbats['_1B'] + 2*atbats['_2B'] + 3*atbats['_3B'] + 4*atbats['_HR']
 atbats['_K'] = atbats['_K'] + atbats['_KDP']
 atbats['_BB'] = atbats['_BB'] + atbats['_IBB']
-atbats['_AB'] = 1 - atbats[['_CI', '_SAC', '_BB',
-                            '_HBP', '_RO', '_SF']].sum(axis=1)
+atbats['_AB'] = 1 - atbats[['_CI', '_SAC', '_BB', '_HBP', '_RO', '_SF']].sum(axis=1)
+#atbats['_AB'] = 1 - atbats[['_SAC', '_BB', '_HBP', '_RO', '_SF']].sum(axis=1)
 atbats['_PA'] = 1 - atbats['_RO']
 
 atbats['_outs'] = atbats['o'] - atbats.groupby(['g_id',
@@ -344,13 +355,15 @@ class kerasIter(Sequence):
                 return all_cols_data, target_data
 
 all_gids = atbats['g_id'].unique()
-test_gids = np.random.choice(all_gids, 400, replace=False)
+#test_gids = np.random.choice(all_gids, 400, replace=False)
+test_gids = np.random.choice(all_gids, 400)
 test_abs = atbats[atbats['g_id'].isin(test_gids)]
 test_pitches = pitches[pitches['ab_id'].isin(test_abs.index)]
 
 train_abs = atbats[~(atbats['g_id'].isin(test_gids))]
 train_pitches = pitches[~(pitches['ab_id'].isin(test_abs.index))]
 
+'''
 ### Model 1: Just use past pitch frequencies
 print("Model 1: Just use past pitch frequencies")
 pt_pred_cols = pd.Index(pt_cols).drop(['UN', 'PO'])
@@ -364,7 +377,7 @@ weights = pt_with_freqs['type_confidence']
 simple_loss = log_loss(correct_labels, preds, sample_weight=weights)
 
 print('Simple model loss: {}'.format(simple_loss))
-
+'''
 
 def plot_model_hist(mdl_hist, name):
     plt.figure(figsize=(20, 8))
@@ -404,11 +417,10 @@ def repeat_vector(args):
     return RepeatVector(K.shape(sequence_layer)[1])(layer_to_repeat)
 
 
-
-
+print("Recurrent Neural Network")
 
 train_iter = kerasIter(train_pitches, train_abs, dynamic_cols, static_cols, target_cols, outcome_cols,
-                       max_batch_size=1024, weights_col='type_confidence', recurrent_mode=True)
+                      max_batch_size=1024, weights_col='type_confidence', recurrent_mode=True)
 test_iter = kerasIter(test_pitches, test_abs, dynamic_cols, static_cols, target_cols, outcome_cols,
                       max_batch_size=1024, weights_col='type_confidence', recurrent_mode=True)
 
